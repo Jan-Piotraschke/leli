@@ -33,6 +33,8 @@ enum Commands {
         folder: String,
         #[arg(short, long)]
         output: Option<String>,
+        #[arg(short, long)]
+        css: Option<String>,
     },
 }
 
@@ -69,10 +71,11 @@ fn main() {
                 }
             }
         }
-        Commands::Translate { folder, output } => {
+        Commands::Translate { folder, output, css } => {
             let doc_folder = output.clone().unwrap_or_else(|| "doc".to_string());
+            let css_path = css.clone().unwrap_or_else(|| "src/css/style.css".to_string());
 
-            if let Err(e) = translate_markdown_folder(&folder, &doc_folder) {
+            if let Err(e) = translate_markdown_folder(&folder, &doc_folder, &css_path) {
                 eprintln!("Error translating markdown: {}", e);
             }
         }
