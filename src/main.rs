@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+use std::process::Command;
 use std::io::Write;
 
 mod extract;
@@ -16,10 +17,6 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Hello {
-        #[arg(short, long, default_value = "Jan")]
-        name: String,
-    },
     Extract {
         #[arg(short, long, conflicts_with = "folder")]
         file: Option<String>,
@@ -42,9 +39,6 @@ fn main() {
     let args = Args::parse();
 
     match &args.command {
-        Commands::Hello { name } => {
-            println!("Hello {}!", name);
-        }
         Commands::Extract { file, folder, output } => {
             let app_folder = output.clone().unwrap_or_else(|| "app".to_string());
 
@@ -75,9 +69,25 @@ fn main() {
             let doc_folder = output.clone().unwrap_or_else(|| "doc".to_string());
             let css_path = css.clone().unwrap_or_else(|| "src/css/style.css".to_string());
 
+            if !ensure_pandoc_installed() {
+                eprintln!("Pandoc is not installed. Please install Pandoc to use this tool.");
+                std::process::exit(1);
+            }
+
             if let Err(e) = translate_markdown_folder(&folder, &doc_folder, &css_path) {
                 eprintln!("Error translating markdown: {}", e);
             }
         }
+    }
+}
+
+fn ensure_pandoc_installed() -> bool {
+    let output = Command::new("pandoc")
+        .arg("--version")
+        .output();
+
+    match output {
+        Ok(output) if output.status.success() => true,
+        _ => false,
     }
 }
