@@ -5,7 +5,7 @@ use std::io::Write;
 mod extract;
 mod translate;
 use extract::{extract_code_from_markdown, extract_code_from_folder};
-use translate::translate_markdown_to_html;
+use translate::translate_markdown_folder;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -30,9 +30,9 @@ enum Commands {
     },
     Translate {
         #[arg(short, long)]
-        input: String,
+        folder: String,
         #[arg(short, long)]
-        output: String,
+        output: Option<String>,
     },
 }
 
@@ -45,7 +45,6 @@ fn main() {
         }
         Commands::Extract { file, folder, output } => {
             let app_folder = output.clone().unwrap_or_else(|| "app".to_string());
-            let doc_folder = "doc".to_string();  // Fixed output folder for HTML documentation
 
             if let Some(file) = file {
                 match extract_code_from_markdown(file) {
@@ -65,13 +64,15 @@ fn main() {
                     }
                 }
             } else if let Some(folder) = folder {
-                if let Err(e) = extract_code_from_folder(folder, &app_folder, &doc_folder) {
+                if let Err(e) = extract_code_from_folder(folder, &app_folder) {
                     eprintln!("Error extracting code: {}", e);
                 }
             }
         }
-        Commands::Translate { input, output } => {
-            if let Err(e) = translate_markdown_to_html(input, output) {
+        Commands::Translate { folder, output } => {
+            let doc_folder = output.clone().unwrap_or_else(|| "doc".to_string());
+
+            if let Err(e) = translate_markdown_folder(&folder, &doc_folder) {
                 eprintln!("Error translating markdown: {}", e);
             }
         }

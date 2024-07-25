@@ -1,16 +1,45 @@
-use std::fs::{self, File};
-use std::io::{self, Write};
-use pulldown_cmark::{Parser, html::push_html};
+use std::fs::{self};
+use std::io::{self};
+use std::path::PathBuf;
+use std::process::Command;
 
-/// Translates a markdown file to HTML and saves it to the specified output path.
-pub fn translate_markdown_to_html(input_path: &str, output_path: &str) -> io::Result<()> {
-    let markdown_input = fs::read_to_string(input_path)?;
-    let parser = Parser::new(&markdown_input);
-    let mut html_output = String::new();
-    push_html(&mut html_output, parser);
+/// Generates HTML from a markdown file using Pandoc and saves it to the specified output path.
+pub fn generate_html_from_markdown(input_path: &str, output_path: &str) -> io::Result<()> {
+    let output = Command::new("pandoc")
+        .arg("--standalone")
+        .arg("--to=html")
+        .arg("--output")
+        .arg(output_path)
+        .arg(input_path)
+        .output()?;
 
-    let mut output_file = File::create(output_path)?;
-    output_file.write_all(html_output.as_bytes())?;
+    if !output.status.success() {
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!("pandoc error: {}", String::from_utf8_lossy(&output.stderr)),
+        ));
+    }
 
+    println!("Generated HTML from {} to {}", input_path, output_path);
+    Ok(())
+}
+
+pub fn translate_markdown_folder(folder_path: &str, doc_folder: &str) -> io::Result<()> {
+    for entry in fs::read_dir(folder_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            let sub_doc_folder = PathBuf::from(doc_folder).join(path.file_name().unwrap());
+            fs::create_dir_all(&sub_doc_folder)?;
+            translate_markdown_folder(path.to_str().unwrap(), sub_doc_folder.to_str().unwrap())?;
+        } else if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("md") {
+            let base_name = path.file_stem().unwrap().to_str().unwrap();
+            let html_output_path = PathBuf::from(doc_folder).join(format!("{}_combined.html", base_name));
+            if let Err(e) = generate_html_from_markdown(path.to_str().unwrap(), html_output_path.to_str().unwrap()) {
+                eprintln!("Error generating HTML for {}: {}", path.display(), e);
+            }
+        }
+    }
     Ok(())
 }

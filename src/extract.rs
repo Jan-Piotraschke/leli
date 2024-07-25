@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 #[derive(Debug, Deserialize)]
 pub struct MarkdownMeta {
@@ -76,17 +75,15 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
     Ok(result)
 }
 
-pub fn extract_code_from_folder(folder_path: &str, app_folder: &str, doc_folder: &str) -> io::Result<()> {
+pub fn extract_code_from_folder(folder_path: &str, app_folder: &str) -> io::Result<()> {
     for entry in fs::read_dir(folder_path)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
             let sub_app_folder = PathBuf::from(app_folder).join(path.file_name().unwrap());
-            let sub_doc_folder = PathBuf::from(doc_folder).join(path.file_name().unwrap());
             fs::create_dir_all(&sub_app_folder)?;
-            fs::create_dir_all(&sub_doc_folder)?;
-            extract_code_from_folder(path.to_str().unwrap(), sub_app_folder.to_str().unwrap(), sub_doc_folder.to_str().unwrap())?;
+            extract_code_from_folder(path.to_str().unwrap(), sub_app_folder.to_str().unwrap())?;
         } else if path.is_file() {
             if path.extension().and_then(|s| s.to_str()) == Some("md") {
                 match extract_code_from_markdown(path.to_str().unwrap()) {
@@ -99,12 +96,6 @@ pub fn extract_code_from_folder(folder_path: &str, app_folder: &str, doc_folder:
                             let mut output_file = File::create(&file_output_path)?;
                             output_file.write_all(code.as_bytes())?;
                             println!("Code extracted to {}", file_output_path.display());
-                        }
-                        // Generate HTML
-                        let base_name = path.file_stem().unwrap().to_str().unwrap();
-                        let html_output_path = PathBuf::from(doc_folder).join(format!("{}_combined.html", base_name));
-                        if let Err(e) = generate_html_from_markdown(path.to_str().unwrap(), html_output_path.to_str().unwrap()) {
-                            eprintln!("Error generating HTML for {}: {}", path.display(), e);
                         }
                     }
                     Err(e) => {
@@ -120,25 +111,5 @@ pub fn extract_code_from_folder(folder_path: &str, app_folder: &str, doc_folder:
         }
     }
 
-    Ok(())
-}
-
-fn generate_html_from_markdown(input_path: &str, output_path: &str) -> io::Result<()> {
-    let output = Command::new("pandoc")
-        .arg("--standalone")
-        .arg("--to=html")
-        .arg("--output")
-        .arg(output_path)
-        .arg(input_path)
-        .output()?;
-
-    if !output.status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!("pandoc error: {}", String::from_utf8_lossy(&output.stderr)),
-        ));
-    }
-
-    println!("Generated HTML from {} to {}", input_path, output_path);
     Ok(())
 }
