@@ -19,3 +19,15 @@ cargo build --release
 ```bash
 ./target/release/leli extract --file example/math_operations.md
 ```
+
+or for a complete folder
+
+```bash
+./target/release/leli extract --folder example
+```
+
+If you want to create HTML files from the markdown files, you can use the following command:
+
+```bash
+./target/release/leli translate --input example
+```
