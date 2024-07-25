@@ -1,7 +1,9 @@
 use clap::{Parser, Subcommand};
 
 mod extract;
+mod translate;
 use extract::extract_code_from_markdown;
+use translate::translate_markdown_to_html;
 
 /// Simple CLI for Literate Programming Microservices
 #[derive(Parser, Debug)]
@@ -25,6 +27,15 @@ enum Commands {
         #[arg(short, long)]
         file: String,
     },
+    /// Translate markdown to HTML
+    Translate {
+        /// Path to the markdown file
+        #[arg(short, long)]
+        input: String,
+        /// Output file path
+        #[arg(short, long)]
+        output: String,
+    },
 }
 
 fn main() {
@@ -37,6 +48,11 @@ fn main() {
         Commands::Extract { file } => {
             if let Err(e) = extract_code_from_markdown(file) {
                 eprintln!("Error extracting code: {}", e);
+            }
+        }
+        Commands::Translate { input, output } => {
+            if let Err(e) = translate_markdown_to_html(input, output) {
+                eprintln!("Error translating markdown: {}", e);
             }
         }
     }
