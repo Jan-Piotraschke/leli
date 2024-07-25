@@ -29,5 +29,7 @@ or for a complete folder
 If you want to create HTML files from the markdown files, you can use the following command:
 
 ```bash
-./target/release/leli translate --input example
+./target/release/leli translate --folder example --css src/css/style.css
 ```
+
+If you don't specify a CSS file, the default CSS of src/css/style.css will be used.
