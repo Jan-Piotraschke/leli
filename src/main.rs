@@ -40,7 +40,7 @@ fn main() {
 
     match &args.command {
         Commands::Extract { file, folder, output } => {
-            let app_folder = output.clone().unwrap_or_else(|| "app".to_string());
+            let app_folder = output.clone().unwrap_or_else(|| ".app".to_string());
 
             if let Some(file) = file {
                 match extract_code_from_markdown(file) {

@@ -71,6 +71,6 @@ package.json
 ## Rustdoc GUI tests
 tests/rustdoc-gui/src/**.lock
 
-app/*
+.app/*
 doc/*
 *.html
