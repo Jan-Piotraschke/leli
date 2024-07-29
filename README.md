@@ -26,6 +26,12 @@ or for a complete folder
 ./target/release/leli extract --folder example
 ```
 
+If you code using the AImM protocol you should use the following command:
+
+```bash
+./target/release/leli extract --folder example --protocol AImM
+```
+
 If you want to create HTML files from the markdown files, you can use the following command:
 
 ```bash
