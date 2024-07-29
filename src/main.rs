@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
+use std::fs::{self, File};
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::Command;
-use std::io::Write;
 
 mod extract;
 mod translate;
@@ -24,6 +25,8 @@ enum Commands {
         folder: Option<String>,
         #[arg(short, long)]
         output: Option<String>,
+        #[arg(short, long)]
+        protocol: Option<String>,
     },
     Translate {
         #[arg(short, long)]
@@ -39,7 +42,7 @@ fn main() {
     let args = Args::parse();
 
     match &args.command {
-        Commands::Extract { file, folder, output } => {
+        Commands::Extract { file, folder, output, protocol } => {
             let app_folder = output.clone().unwrap_or_else(|| ".app".to_string());
 
             if let Some(file) = file {
@@ -48,9 +51,9 @@ fn main() {
                         for (filename, code) in extracted_code {
                             let output_path = PathBuf::from(&app_folder).join(filename);
                             if let Some(parent) = output_path.parent() {
-                                std::fs::create_dir_all(parent).unwrap();
+                                fs::create_dir_all(parent).unwrap();
                             }
-                            let mut output_file = std::fs::File::create(&output_path).unwrap();
+                            let mut output_file = File::create(&output_path).unwrap();
                             output_file.write_all(code.as_bytes()).unwrap();
                             println!("Code extracted to {}", output_path.display());
                         }
@@ -62,6 +65,23 @@ fn main() {
             } else if let Some(folder) = folder {
                 if let Err(e) = extract_code_from_folder(folder, &app_folder) {
                     eprintln!("Error extracting code: {}", e);
+                }
+            }
+
+            if let Some(protocol) = protocol {
+                if protocol == "AImM" {
+                    let src_folder = PathBuf::from(&app_folder).join("src");
+                    let private_folder = PathBuf::from(&app_folder).join("private");
+                    let public_folder = PathBuf::from(&app_folder).join("public");
+                    combine_folders(&[private_folder.clone(), public_folder.clone()], &src_folder).unwrap();
+
+                    // Remove the private and public folders
+                    if private_folder.exists() {
+                        fs::remove_dir_all(private_folder).unwrap();
+                    }
+                    if public_folder.exists() {
+                        fs::remove_dir_all(public_folder).unwrap();
+                    }
                 }
             }
         }
@@ -90,4 +110,24 @@ fn ensure_pandoc_installed() -> bool {
         Ok(output) if output.status.success() => true,
         _ => false,
     }
+}
+
+fn combine_folders(folders: &[PathBuf], dest_folder: &PathBuf) -> io::Result<()> {
+    fs::create_dir_all(dest_folder)?;
+
+    for folder in folders {
+        if folder.exists() && folder.is_dir() {
+            for entry in fs::read_dir(&folder)? {
+                let entry = entry?;
+                let entry_path = entry.path();
+                if entry_path.is_file() {
+                    let file_name = entry_path.file_name().unwrap();
+                    let dest_path = dest_folder.join(file_name);
+                    fs::copy(entry_path, dest_path)?;
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
