@@ -113,21 +113,21 @@ fn ensure_pandoc_installed() -> bool {
 }
 
 fn combine_folders(folders: &[PathBuf], dest_folder: &PathBuf) -> io::Result<()> {
-    fs::create_dir_all(dest_folder)?;
-
     for folder in folders {
         if folder.exists() && folder.is_dir() {
             for entry in fs::read_dir(&folder)? {
                 let entry = entry?;
                 let entry_path = entry.path();
-                if entry_path.is_file() {
-                    let file_name = entry_path.file_name().unwrap();
-                    let dest_path = dest_folder.join(file_name);
+                let dest_path = dest_folder.join(entry_path.file_name().unwrap());
+
+                if entry_path.is_dir() {
+                    combine_folders(&[entry_path], &dest_path)?;
+                } else {
+                    fs::create_dir_all(dest_folder)?;
                     fs::copy(entry_path, dest_path)?;
                 }
             }
         }
     }
-
     Ok(())
 }
