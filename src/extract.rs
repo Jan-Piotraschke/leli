@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 
@@ -9,7 +9,7 @@ pub struct MarkdownMeta {
     pub output_filename: String,
 }
 
-pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String, String>> {
+pub fn extract_code_from_markdown(file_path: &str) -> io::Result<Result<HashMap<String, String>, String>> {
     let path = Path::new(file_path);
     let file = File::open(&path)?;
     let reader = BufReader::new(file);
@@ -52,10 +52,7 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
     }
 
     if !found_meta {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidData,
-            "Missing required front matter in the Markdown file",
-        ));
+        return Ok(Err("No metadata found".to_string()));
     }
 
     println!("Extracted YAML metadata:\n{}", meta_data);
@@ -81,31 +78,37 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
         result.insert(output_filename, code);
     }
 
-    Ok(result)
+    Ok(Ok(result))
 }
 
 pub fn extract_code_from_folder(folder_path: &str, app_folder: &str) -> io::Result<()> {
-    for entry in fs::read_dir(folder_path)? {
+    for entry in std::fs::read_dir(folder_path)? {
         let entry = entry?;
         let path = entry.path();
 
         if path.is_dir() {
             let sub_app_folder = PathBuf::from(app_folder).join(path.file_name().unwrap());
-            fs::create_dir_all(&sub_app_folder)?;
+            std::fs::create_dir_all(&sub_app_folder)?;
             extract_code_from_folder(path.to_str().unwrap(), sub_app_folder.to_str().unwrap())?;
         } else if path.is_file() {
             if path.extension().and_then(|s| s.to_str()) == Some("md") {
                 match extract_code_from_markdown(path.to_str().unwrap()) {
-                    Ok(extracted_code) => {
+                    Ok(Ok(extracted_code)) => {
                         for (filename, code) in extracted_code {
                             let file_output_path = PathBuf::from(app_folder).join(filename);
                             if let Some(parent) = file_output_path.parent() {
-                                fs::create_dir_all(parent)?;
+                                std::fs::create_dir_all(parent)?;
                             }
                             let mut output_file = File::create(&file_output_path)?;
                             output_file.write_all(code.as_bytes())?;
                             println!("Code extracted to {}", file_output_path.display());
                         }
+                    }
+                    Ok(Err(_)) => {
+                        // Copy simple markdown file to .app folder
+                        let output_path = PathBuf::from(app_folder).join(path.file_name().unwrap());
+                        std::fs::copy(&path, &output_path)?;
+                        println!("Copied file to {}", output_path.display());
                     }
                     Err(e) => {
                         eprintln!("Error processing file {}: {}", path.display(), e);
@@ -114,7 +117,7 @@ pub fn extract_code_from_folder(folder_path: &str, app_folder: &str) -> io::Resu
             } else {
                 // Copy non-markdown file to app folder
                 let output_path = PathBuf::from(app_folder).join(path.file_name().unwrap());
-                fs::copy(&path, &output_path)?;
+                std::fs::copy(&path, &output_path)?;
                 println!("Copied file to {}", output_path.display());
             }
         }
