@@ -1,49 +1,25 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::fs::{self, File};
-use std::io::{self, Write};
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use walkdir::WalkDir;
+use std::io::Write;
+use std::path::PathBuf;
+use std::path::Path;
 
-mod extract;
-mod translate;
-use extract::{extract_code_from_markdown, extract_code_from_folder};
-use translate::translate_markdown_folder;
+mod commands;
+mod utils;
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand, Debug)]
-enum Commands {
-    Extract {
-        #[arg(short, long, conflicts_with = "folder")]
-        file: Option<String>,
-        #[arg(short, long, conflicts_with = "file")]
-        folder: Option<String>,
-        #[arg(short, long)]
-        output: Option<String>,
-        #[arg(short, long)]
-        protocol: Option<String>,
-    },
-    Translate {
-        #[arg(short, long)]
-        folder: String,
-        #[arg(short, long)]
-        output: Option<String>,
-        #[arg(short, long)]
-        css: Option<String>,
-    },
-}
+use commands::{extract::*, translate::*, Args, Commands};
+use utils::{ensure_pandoc_installed, process_protocol_aimm};
 
 fn main() {
     let args = Args::parse();
 
     match &args.command {
-        Commands::Extract { file, folder, output, protocol } => {
+        Commands::Extract {
+            file,
+            folder,
+            output,
+            protocol,
+        } => {
             let app_folder = output.clone().unwrap_or_else(|| ".app".to_string());
 
             if let Some(file) = file {
@@ -61,7 +37,8 @@ fn main() {
                     }
                     Ok(Err(_)) => {
                         // Copy simple markdown file to .app folder
-                        let output_path = PathBuf::from(&app_folder).join(Path::new(file).file_name().unwrap());
+                        let output_path =
+                            PathBuf::from(&app_folder).join(Path::new(file).file_name().unwrap());
                         fs::copy(file, &output_path).unwrap();
                         println!("Copied file to {}", output_path.display());
                     }
@@ -88,7 +65,11 @@ fn main() {
                 println!("No protocol specified.");
             }
         }
-        Commands::Translate { folder, output, css } => {
+        Commands::Translate {
+            folder,
+            output,
+            css,
+        } => {
             let doc_folder = output.clone().unwrap_or_else(|| "doc".to_string());
             let css_path = css.clone().unwrap_or_else(|| "src/css/style.css".to_string());
 
@@ -102,91 +83,4 @@ fn main() {
             }
         }
     }
-}
-
-fn ensure_pandoc_installed() -> bool {
-    let output = Command::new("pandoc")
-        .arg("--version")
-        .output();
-
-    match output {
-        Ok(output) if output.status.success() => true,
-        _ => false,
-    }
-}
-
-fn process_protocol_aimm(app_folder: &Path) -> io::Result<()> {
-    let mut folders_to_process = Vec::new();
-
-    // Recursively search for private and public folders
-    for entry in WalkDir::new(app_folder).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.is_dir() {
-            if path.ends_with("private") || path.ends_with("public") {
-                folders_to_process.push(path.to_path_buf());
-            }
-        }
-    }
-
-    let mut processed_parents = std::collections::HashSet::new();
-
-    for folder in folders_to_process {
-        let parent = folder.parent().unwrap().to_path_buf();
-        if processed_parents.contains(&parent) {
-            continue;
-        }
-
-        let private_folder = parent.join("private");
-        let public_folder = parent.join("public");
-        let src_folder = parent.join("src");
-
-        let mut sub_folders = vec![];
-        if private_folder.exists() && private_folder.is_dir() {
-            sub_folders.push(private_folder.clone());
-        }
-        if public_folder.exists() && public_folder.is_dir() {
-            sub_folders.push(public_folder.clone());
-        }
-
-        if !sub_folders.is_empty() {
-            println!("Combining folders into {:?}", src_folder);
-            combine_folders(&sub_folders, &src_folder)?;
-
-            // Remove the private and public folders
-            if private_folder.exists() {
-                fs::remove_dir_all(&private_folder)?;
-            }
-            if public_folder.exists() {
-                fs::remove_dir_all(&public_folder)?;
-            }
-
-            processed_parents.insert(parent);
-        }
-    }
-
-    Ok(())
-}
-
-fn combine_folders(folders: &[PathBuf], dest_folder: &PathBuf) -> io::Result<()> {
-    for folder in folders {
-        if folder.exists() && folder.is_dir() {
-            println!("Processing folder: {:?}", folder);
-            for entry in fs::read_dir(&folder)? {
-                let entry = entry?;
-                let entry_path = entry.path();
-                let dest_path = dest_folder.join(entry_path.file_name().unwrap());
-
-                if entry_path.is_dir() {
-                    combine_folders(&[entry_path], &dest_path)?;
-                } else {
-                    fs::create_dir_all(dest_folder)?;
-                    fs::copy(&entry_path, &dest_path)?;
-                    println!("Copied file to {:?}", dest_path);
-                }
-            }
-        } else {
-            println!("Folder does not exist or is not a directory: {:?}", folder);
-        }
-    }
-    Ok(())
 }
