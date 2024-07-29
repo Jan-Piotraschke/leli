@@ -16,6 +16,7 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
 
     let mut meta_data = String::new();
     let mut in_front_matter = false;
+    let mut found_meta = false;
     let mut code_blocks: HashMap<String, String> = HashMap::new();
     let mut current_lang = String::new();
 
@@ -26,6 +27,7 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
             in_front_matter = true;
         } else if line.trim() == "---" && in_front_matter {
             in_front_matter = false;
+            found_meta = true;
         } else if in_front_matter {
             meta_data.push_str(&line);
             meta_data.push('\n');
@@ -47,6 +49,13 @@ pub fn extract_code_from_markdown(file_path: &str) -> io::Result<HashMap<String,
                 code.push('\n');
             }
         }
+    }
+
+    if !found_meta {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Missing required front matter in the Markdown file",
+        ));
     }
 
     println!("Extracted YAML metadata:\n{}", meta_data);
