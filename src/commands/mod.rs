@@ -1,6 +1,7 @@
 pub mod extract;
 pub mod save;
 pub mod translate;
+pub mod models;
 
 use clap::{Parser, Subcommand};
 
