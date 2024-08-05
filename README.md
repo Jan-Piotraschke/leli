@@ -26,6 +26,8 @@ If you are on a Windows machine please also install "Diesel" using the following
 powershell -c "irm https://github.com/diesel-rs/diesel/releases/download/v2.2.1/diesel_cli-installer.ps1 | iex"
 ```
 
+And please also install "Pandoc"
+
 ## Usage
 
 ```bash
@@ -63,3 +65,14 @@ or
 ```bash
  ./target/release/leli save --file doc/created_html_files.txt --db mydatabase.sqlite
 ```
+
+
+## Development
+
+If you develop on a macOS, please use **leli** for Windows cross-compilation using [wine](https://formulae.brew.sh/cask/wine-stable) like this:
+
+```bash
+wine windows/leli.exe extract --folder example --protocol AImM
+```
+
+Simply add *wine* in front of the normal command.
