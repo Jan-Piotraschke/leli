@@ -14,6 +14,18 @@ Compile the project using the following command:
 cargo build --release
 ```
 
+or if you are on a Windows machine:
+
+```bash
+cargo build --release --target x86_64-pc-windows-gnu
+```
+
+If you are on a Windows machine please also install "Diesel" using the following command:
+
+```bash
+powershell -c "irm https://github.com/diesel-rs/diesel/releases/download/v2.2.1/diesel_cli-installer.ps1 | iex"
+```
+
 ## Usage
 
 ```bash
@@ -38,4 +50,16 @@ If you want to create HTML files from the markdown files, you can use the follow
 ./target/release/leli translate --folder example --css src/css/style.css
 ```
 
-If you don't specify a CSS file, the default CSS of src/css/style.css will be used.
+If you don't specify a CSS file, the default CSS of src/css/style.css will be used.  
+
+If you want to save the meta data of the generated HTML files to a SQLite database, you can use the following command:
+
+```bash
+ ./target/release/leli save --file doc/created_html_files.txt --db mydatabase.db
+```
+
+or
+
+```bash
+ ./target/release/leli save --file doc/created_html_files.txt --db mydatabase.sqlite
+```

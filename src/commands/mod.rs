@@ -1,5 +1,7 @@
 pub mod extract;
+pub mod save;
 pub mod translate;
+pub mod models;
 
 use clap::{Parser, Subcommand};
 
@@ -29,5 +31,11 @@ pub enum Commands {
         output: Option<String>,
         #[arg(short, long)]
         css: Option<String>,
+    },
+    Save {
+        #[arg(short, long)]
+        file: String,
+        #[arg(short, long)]
+        db: String,
     },
 }

@@ -74,3 +74,5 @@ tests/rustdoc-gui/src/**.lock
 .app/*
 doc/*
 *.html
+*.db
+*.sqlite
