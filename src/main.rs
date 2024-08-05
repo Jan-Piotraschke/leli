@@ -1,4 +1,3 @@
-// src/main.rs
 use clap::Parser;
 use std::fs::{self, File};
 use std::io::Write;
@@ -85,13 +84,13 @@ fn main() {
         }
         Commands::Save {
             file,
-            db: _,
+            db,
         } => {
             let created_files = fs::read_to_string(file).expect("Unable to read created files list");
             let html_files: Vec<String> = created_files.lines().map(|s| s.to_string()).collect();
 
-            let mut conn = establish_connection(); // Make the connection mutable
-            if let Err(e) = save_html_metadata_to_db(&html_files, &mut conn) {
+            let mut conn = establish_connection(db); // Pass the database URL
+            if let Err(e) = save_html_metadata_to_db(&html_files, &mut conn, db) {
                 eprintln!("Error saving HTML metadata to database: {}", e);
             }
         }
