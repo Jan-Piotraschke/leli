@@ -28,6 +28,15 @@ powershell -c "irm https://github.com/diesel-rs/diesel/releases/download/v2.2.1/
 
 And please also install "Pandoc"
 
+### Make *leli* available globally
+
+If you are on a Unix-like system, you can use the following command:
+
+```bash
+rustc install.rs
+./install
+```
+
 ## Usage
 
 ```bash
