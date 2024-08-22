@@ -69,16 +69,18 @@ fn main() {
             folder,
             output,
             css,
+            mermaid,
         } => {
             let doc_folder = output.clone().unwrap_or_else(|| "doc".to_string());
             let css_path = css.clone().unwrap_or_else(|| "src/css/style.css".to_string());
+            let mermaid_path = mermaid.clone().unwrap_or_else(|| "src/js/mermaid.min.js".to_string());
 
             if !ensure_pandoc_installed() {
                 eprintln!("Pandoc is not installed. Please install Pandoc to use this tool.");
                 std::process::exit(1);
             }
 
-            if let Err(e) = translate_markdown_folder(&folder, &doc_folder, &css_path) {
+            if let Err(e) = translate_markdown_folder(&folder, &doc_folder, &css_path, &mermaid_path) {
                 eprintln!("Error translating markdown: {}", e);
             }
         }

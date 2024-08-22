@@ -58,7 +58,8 @@ If you code using the AImM protocol you should use the following command:
 If you want to create HTML files from the markdown files, you can use the following command:
 
 ```bash
-./target/release/leli translate --folder example --css src/css/style.css
+./target/release/leli translate --folder example --css src/css/style.css --mermaid src/js/mermaid.min.js
+
 ```
 
 If you don't specify a CSS file, the default CSS of src/css/style.css will be used.  

@@ -31,6 +31,8 @@ pub enum Commands {
         output: Option<String>,
         #[arg(short, long)]
         css: Option<String>,
+        #[arg(short, long)]
+        mermaid: Option<String>,
     },
     Save {
         #[arg(short, long)]
