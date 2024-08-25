@@ -25,10 +25,12 @@ jobs:
 
       - name: Check for outdated dependencies
         id: cargo_outdated
-        run: cargo install-update --all -- --dry-run
+        run: |
+          outdated=$(cargo install-update --all -- --dry-run | grep -q 'Yes' && echo 'true' || echo 'false')
+          echo "updated=$outdated" >> $GITHUB_ENV
 
       - name: Update dependencies if outdated
-        if: steps.cargo_outdated.outputs.updated == 'true'
+        if: env.updated == 'true'
         run: |
           current_date=$(date +'%Y-%b-%d')
           branch_name="dependencies_update_${current_date}"
@@ -47,5 +49,5 @@ jobs:
           git push origin $branch_name
 
       - name: Check if updates were made
-        if: steps.cargo_outdated.outputs.updated == 'false'
+        if: env.updated == 'false'
         run: echo "No dependencies were updated."
