@@ -25,7 +25,7 @@ jobs:
 
       - name: Check for outdated dependencies
         id: cargo_outdated
-        run: cargo install-update -a --dry-run
+        run: cargo install-update --all -- --dry-run
 
       - name: Update dependencies if outdated
         if: steps.cargo_outdated.outputs.updated == 'true'
