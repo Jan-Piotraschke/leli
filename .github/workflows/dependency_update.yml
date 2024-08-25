@@ -1,0 +1,50 @@
+name: Check for Dependency Updates
+
+on:
+  schedule:
+    # Runs at 18:30 every Sunday in Berlin, Germany Time (CET/CEST)
+    - cron: '30 18 * * 0'
+      timezone: 'Europe/Berlin'
+
+jobs:
+  update_dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-update
+        run: cargo install cargo-update
+
+      - name: Check for outdated dependencies
+        id: cargo_outdated
+        run: cargo install-update -a --dry-run
+
+      - name: Update dependencies if outdated
+        if: steps.cargo_outdated.outputs.updated == 'true'
+        run: |
+          current_date=$(date +'%Y-%b-%d')
+          branch_name="dependencies_update_${current_date}"
+          
+          # Create a new branch
+          git checkout -b $branch_name
+
+          # Update Cargo.toml and Cargo.lock
+          cargo update
+
+          # Commit and push the changes
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          git commit -m "Updated dependencies on $current_date"
+          git push origin $branch_name
+
+      - name: Check if updates were made
+        if: steps.cargo_outdated.outputs.updated == 'false'
+        run: echo "No dependencies were updated."
