@@ -5,6 +5,7 @@ on:
     # Runs at 18:30 every Sunday in Berlin, Germany Time (CET/CEST)
     - cron: '30 18 * * 0'
       timezone: 'Europe/Berlin'
+  workflow_dispatch:
 
 jobs:
   update_dependencies:
